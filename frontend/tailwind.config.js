@@ -7,37 +7,37 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Mint & Sage Color System from User Palette
+        // Ocean Breathe Color System from User Palette
         brand: {
-          50: '#FAFBFA',   // Pale Canvas
-          100: '#E6F2EC',  // Soft Mint Tint
-          200: '#CDE6D8',  // Light Sage / Mint
-          300: '#B2D4C2',  // Smooth Bridge
-          400: '#8FAE9D',  // Medium Sage
-          500: '#678E7A',  // Balanced Sage
-          600: '#4E6F5E',  // Deep Forest Sage (Primary brand tone)
-          700: '#3E5A4C',  // Darker Sage
-          800: '#2E4338',  // Deep Slate Sage
-          900: '#1D2D25',  // Dark Forest
-          950: '#101A15',
+          50: '#F7F8F9',   // Soft Clean Canvas (#F7F8F9)
+          100: '#DDEAF0',  // Pale Ice Breeze (#DDEAF0)
+          200: '#A8CFC6',  // Soft Aqua Mint (#A8CFC6)
+          300: '#8CBEC0',  // Smooth Aqua Bridge
+          400: '#6FA8B3',  // Medium Ocean Mist (#6FA8B3)
+          500: '#4B8196',  // Balanced Ocean Blue
+          600: '#2D5D7A',  // Deep Ocean Teal (#2D5D7A - Primary brand tone)
+          700: '#22485F',  // Deeper Ocean Slate
+          800: '#193647',  // Deep Navy Slate
+          900: '#102430',  // Midnight Ocean
+          950: '#0A161E',  // Deepest Navy
         },
-        sage: {
-          dark: '#4E6F5E',
-          medium: '#8FAE9D',
-          light: '#CDE6D8',
-          pale: '#E6F2EC',
-          sand: '#DCCFBE',
-          canvas: '#FAFBFA',
+        ocean: {
+          deep: '#2D5D7A',
+          mist: '#6FA8B3',
+          aqua: '#A8CFC6',
+          breeze: '#DDEAF0',
+          sand: '#E8DCC6',
+          canvas: '#F7F8F9',
         },
         sand: {
-          50: '#FAF8F5',
-          100: '#F4EFE8',
-          200: '#EAE1D5',
-          300: '#DCCFBE',  // Exact Warm Sand / Oat Swatch
-          400: '#C4B4A0',
-          500: '#A4927E',
-          600: '#82715F',
-          700: '#615344',
+          50: '#FAF7F2',
+          100: '#F5EFE5',
+          200: '#EEE4D4',
+          300: '#E8DCC6',  // Exact Warm Sand Swatch (#E8DCC6)
+          400: '#D2C0A4',
+          500: '#B59E7E',
+          600: '#8F7B5F',
+          700: '#6B5B44',
         },
         emergency: {
           50: '#FEF2F2',
