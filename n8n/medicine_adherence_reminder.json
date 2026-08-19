@@ -1,0 +1,125 @@
+{
+  "name": "FHR - Automated Medication Adherence Reminders",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "name": "Hourly Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [220, 300],
+      "id": "node-schedule-trigger"
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.BACKEND_API_URL || 'http://localhost:8000/api' }}/timeline",
+        "options": {}
+      },
+      "name": "Fetch Active Prescriptions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [440, 300],
+      "id": "node-fetch-timeline"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Identify active medicines and build dosage alert notifications\nconst records = $input.first().json.records || [];\nconst currentHour = new Date().getHours();\n\nconst dueMedicines = [];\n\nrecords.forEach(record => {\n  if (record.medicines && record.medicines.length > 0) {\n    record.medicines.forEach(med => {\n      dueMedicines.push({\n        medicine_name: med.name,\n        dosage: med.dosage,\n        frequency: med.frequency,\n        timing: med.timing || 'As advised',\n        doctor: record.doctor_name || 'Your Doctor',\n        patient_name: record.user_id,\n      });\n    });\n  }\n});\n\nif (dueMedicines.length === 0) {\n  return [];\n}\n\nlet alertMessage = `🔔 *Medication Reminder — Fragmented Health Record*\\n\\n`;\nalertMessage += `Hello! You have upcoming prescribed medications to take:\\n\\n`;\n\ndueMedicines.slice(0, 3).forEach((m, idx) => {\n  alertMessage += `${idx + 1}. 💊 *${m.medicine_name}* (${m.dosage})\\n`;\n  alertMessage += `   • Schedule: ${m.frequency} (${m.timing})\\n`;\n});\n\nalertMessage += `\\n👉 Log dosage adherence on your dashboard:\\nhttp://localhost:5173/medicines\\n\\n`;\nalertMessage += `🛡️ *Creative Tinkers Health Adherence Bot*`;\n\nreturn [{\n  json: {\n    total_due: dueMedicines.length,\n    medicines: dueMedicines,\n    notification_message: alertMessage,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "name": "Filter Due Dosages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [660, 300],
+      "id": "node-filter-dosages"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.total_due }}",
+              "operation": "larger",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "name": "Any Doses Due?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [880, 300],
+      "id": "node-check-due"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.NOTIFICATION_WEBHOOK_URL || 'http://localhost:8000/api/health' }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"type\": \"medication_reminder\",\n  \"message\": {{ JSON.stringify($json.notification_message) }},\n  \"total_medicines\": {{ $json.total_due }},\n  \"timestamp\": \"{{ $json.timestamp }}\"\n}",
+        "options": {}
+      },
+      "name": "Dispatch Medication Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1100, 220],
+      "id": "node-dispatch-alert"
+    }
+  ],
+  "connections": {
+    "Hourly Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Active Prescriptions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Active Prescriptions": {
+      "main": [
+        [
+          {
+            "node": "Filter Due Dosages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Due Dosages": {
+      "main": [
+        [
+          {
+            "node": "Any Doses Due?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any Doses Due?": {
+      "main": [
+        [
+          {
+            "node": "Dispatch Medication Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

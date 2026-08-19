@@ -1,0 +1,151 @@
+{
+  "name": "FHR - WhatsApp & Webhook Medical Document AI Ingestion",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "medical-document-ingest",
+        "options": {}
+      },
+      "name": "Webhook - Ingest Document",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [240, 300],
+      "id": "node-webhook-ingest"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.body.file_url || $json.body.attachment_url }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "name": "Check Document URL",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [460, 300],
+      "id": "node-check-doc"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.body.file_url || $json.body.attachment_url }}",
+        "responseFormat": "file",
+        "options": {}
+      },
+      "name": "Download Medical Document",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [680, 220],
+      "id": "node-download-file"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.BACKEND_API_URL || 'http://localhost:8000/api' }}/documents/upload",
+        "sendBinaryData": true,
+        "binaryPropertyName": "data",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $('Webhook - Ingest Document').item.json.headers.authorization || '' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "FastAPI Gemini AI Extractor",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [900, 220],
+      "id": "node-fastapi-extract"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Format WhatsApp / Notification summary message\nconst data = $input.first().json;\nconst encounter = data.extraction?.encounter || {};\nconst medicines = data.extraction?.medicines || [];\nconst labResults = data.extraction?.lab_results || [];\n\nlet message = `🏥 *Medical Record Processed Successfully!*\\n\\n`;\nif (encounter.doctor_name) {\n  message += `👨‍⚕️ *Doctor:* ${encounter.doctor_name}\\n`;\n}\nif (encounter.facility_name) {\n  message += `🏢 *Facility:* ${encounter.facility_name}\\n`;\n}\nif (encounter.record_date) {\n  message += `📅 *Date:* ${encounter.record_date}\\n`;\n}\n\nif (medicines.length > 0) {\n  message += `\\n💊 *Prescribed Medications (${medicines.length}):*\\n`;\n  medicines.forEach(m => {\n    message += `• *${m.name}* (${m.dosage}) - ${m.frequency}\\n`;\n  });\n}\n\nif (labResults.length > 0) {\n  message += `\\n🧪 *Lab Biomarkers (${labResults.length}):*\\n`;\n  labResults.slice(0, 4).forEach(l => {\n    message += `• ${l.test_name}: *${l.value} ${l.unit}* (${l.flag})\\n`;\n  });\n}\n\nmessage += `\\n🛡️ *ABDM Health Vault:* Synced to your longitudinal timeline.`;\n\nreturn [{ json: { summary_message: message, raw_data: data } }];"
+      },
+      "name": "Format Summary Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 220],
+      "id": "node-format-message"
+    },
+    {
+      "parameters": {
+        "options": {},
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"success\",\n  \"message\": \"Document processed and stored in Health Vault\",\n  \"summary\": {{ JSON.stringify($json.summary_message) }}\n}"
+      },
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1340, 220],
+      "id": "node-respond-webhook"
+    }
+  ],
+  "connections": {
+    "Webhook - Ingest Document": {
+      "main": [
+        [
+          {
+            "node": "Check Document URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Document URL": {
+      "main": [
+        [
+          {
+            "node": "Download Medical Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Medical Document": {
+      "main": [
+        [
+          {
+            "node": "FastAPI Gemini AI Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FastAPI Gemini AI Extractor": {
+      "main": [
+        [
+          {
+            "node": "Format Summary Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Summary Message": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

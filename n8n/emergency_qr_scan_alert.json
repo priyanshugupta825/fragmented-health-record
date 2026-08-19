@@ -1,0 +1,92 @@
+{
+  "name": "FHR - Emergency QR Scan Immediate Caregiver Alert",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "emergency-scan-alert",
+        "options": {}
+      },
+      "name": "Webhook - Emergency Scan",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [220, 300],
+      "id": "node-emergency-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare urgent emergency alert for primary caregivers / family\nconst data = $input.first().json.body || {};\nconst patientName = data.patient_name || 'Ravi Kumar';\nconst bloodGroup = data.blood_group || 'O+';\nconst emergencyContacts = data.emergency_contacts || [\n  { name: 'Sunita Kumar (Spouse)', phone: '+91 98765 43210' }\n];\nconst timestamp = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });\n\nlet urgentMessage = `🚨 *URGENT MEDICAL ALERT — EMERGENCY QR SCANNED* 🚨\\n\\n`;\nurgentMessage += `The Emergency Medical QR code for *${patientName}* (Blood Group: *${bloodGroup}*) was just accessed by a First Responder / Medical Personnel.\\n\\n`;\nurgentMessage += `🕒 *Time:* ${timestamp} IST\\n`;\nurgentMessage += `📍 *Access Source:* Emergency Room / Field Scanner\\n`;\nurgentMessage += `🏥 *Platform:* ABDM Fragmented Health Record\\n\\n`;\nurgentMessage += `If this is an unexpected emergency, please reach out to local emergency services or contact ${patientName} immediately.`;\n\nreturn [{\n  json: {\n    urgent_message: urgentMessage,\n    contacts: emergencyContacts,\n    patient_name: patientName,\n    timestamp: timestamp\n  }\n}];"
+      },
+      "name": "Format Emergency Alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 300],
+      "id": "node-format-emergency"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.NOTIFICATION_WEBHOOK_URL || 'http://localhost:8000/api/health' }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"alert_level\": \"CRITICAL_EMERGENCY\",\n  \"message\": {{ JSON.stringify($json.urgent_message) }},\n  \"patient\": \"{{ $json.patient_name }}\",\n  \"contacts\": {{ JSON.stringify($json.contacts) }},\n  \"timestamp\": \"{{ $json.timestamp }}\"\n}",
+        "options": {}
+      },
+      "name": "Dispatch Urgent Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [660, 300],
+      "id": "node-dispatch-emergency"
+    },
+    {
+      "parameters": {
+        "options": {},
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"dispatched\",\n  \"message\": \"Emergency alert dispatched to registered caregivers\",\n  \"timestamp\": \"{{ $json.timestamp }}\"\n}"
+      },
+      "name": "Respond to Scanner",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [880, 300],
+      "id": "node-respond-emergency"
+    }
+  ],
+  "connections": {
+    "Webhook - Emergency Scan": {
+      "main": [
+        [
+          {
+            "node": "Format Emergency Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Emergency Alert": {
+      "main": [
+        [
+          {
+            "node": "Dispatch Urgent Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dispatch Urgent Notification": {
+      "main": [
+        [
+          {
+            "node": "Respond to Scanner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
