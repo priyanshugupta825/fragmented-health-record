@@ -1,5 +1,6 @@
 {
   "name": "FHR - WhatsApp & Webhook Medical Document AI Ingestion",
+  "id": "fhrDocIngest0001",
   "nodes": [
     {
       "parameters": {
@@ -54,7 +55,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.BACKEND_API_URL || 'http://localhost:8000/api' }}/documents/upload",
+        "url": "http://localhost:8000/api/documents/upload",
         "sendBinaryData": true,
         "binaryPropertyName": "data",
         "sendHeaders": true,
@@ -166,6 +167,5 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "id": "fhrDocIngest0001",
   "active": false
 }

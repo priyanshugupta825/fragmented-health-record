@@ -1,5 +1,6 @@
 {
   "name": "FHR - Emergency QR Scan Immediate Caregiver Alert",
+  "id": "fhrEmgAlert0001",
   "nodes": [
     {
       "parameters": {
@@ -32,7 +33,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.NOTIFICATION_WEBHOOK_URL || 'http://localhost:8000/api/health' }}",
+        "url": "http://localhost:8000/api/health",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"alert_level\": \"CRITICAL_EMERGENCY\",\n  \"message\": {{ JSON.stringify($json.urgent_message) }},\n  \"patient\": \"{{ $json.patient_name }}\",\n  \"contacts\": {{ JSON.stringify($json.contacts) }},\n  \"timestamp\": \"{{ $json.timestamp }}\"\n}",
@@ -101,6 +102,5 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "id": "fhrEmgAlert0001",
   "active": false
 }

@@ -1,5 +1,6 @@
 {
   "name": "FHR - Automated Medication Adherence Reminders",
+  "id": "fhrMedReminder01",
   "nodes": [
     {
       "parameters": {
@@ -23,7 +24,7 @@
     },
     {
       "parameters": {
-        "url": "={{ $env.BACKEND_API_URL || 'http://localhost:8000/api' }}/timeline",
+        "url": "http://localhost:8000/api/timeline",
         "options": {}
       },
       "name": "Fetch Active Prescriptions",
@@ -37,7 +38,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Identify active medicines and build dosage alert notifications\nconst records = $input.first().json.records || [];\nconst currentHour = new Date().getHours();\n\nconst dueMedicines = [];\n\nrecords.forEach(record => {\n  if (record.medicines && record.medicines.length > 0) {\n    record.medicines.forEach(med => {\n      dueMedicines.push({\n        medicine_name: med.name,\n        dosage: med.dosage,\n        frequency: med.frequency,\n        timing: med.timing || 'As advised',\n        doctor: record.doctor_name || 'Your Doctor',\n        patient_name: record.user_id,\n      });\n    });\n  }\n});\n\nif (dueMedicines.length === 0) {\n  return [];\n}\n\nlet alertMessage = `\ud83d\udd14 *Medication Reminder \u2014 Fragmented Health Record*\\n\\n`;\nalertMessage += `Hello! You have upcoming prescribed medications to take:\\n\\n`;\n\ndueMedicines.slice(0, 3).forEach((m, idx) => {\n  alertMessage += `${idx + 1}. \ud83d\udc8a *${m.medicine_name}* (${m.dosage})\\n`;\n  alertMessage += `   \u2022 Schedule: ${m.frequency} (${m.timing})\\n`;\n});\n\nalertMessage += `\\n\ud83d\udc49 Log dosage adherence on your dashboard:\\nhttp://localhost:5173/medicines\\n\\n`;\nalertMessage += `\ud83d\udee1\ufe0f *Creative Tinkers Health Adherence Bot*`;\n\nreturn [{\n  json: {\n    total_due: dueMedicines.length,\n    medicines: dueMedicines,\n    notification_message: alertMessage,\n    timestamp: new Date().toISOString()\n  }\n}];"
+        "jsCode": "// Identify active medicines and build dosage alert notifications\nconst records = $input.first().json.records || [];\n\nconst dueMedicines = [];\n\nrecords.forEach(record => {\n  if (record.medicines && record.medicines.length > 0) {\n    record.medicines.forEach(med => {\n      dueMedicines.push({\n        medicine_name: med.name,\n        dosage: med.dosage,\n        frequency: med.frequency,\n        timing: med.timing || 'As advised',\n        doctor: record.doctor_name || 'Your Doctor',\n        patient_name: record.user_id,\n      });\n    });\n  }\n});\n\nif (dueMedicines.length === 0) {\n  return [{ json: { total_due: 0, message: 'No medication due' } }];\n}\n\nlet alertMessage = `\ud83d\udd14 *Medication Reminder \u2014 Fragmented Health Record*\\n\\n`;\nalertMessage += `Hello! You have upcoming prescribed medications to take:\\n\\n`;\n\ndueMedicines.slice(0, 3).forEach((m, idx) => {\n  alertMessage += `${idx + 1}. \ud83d\udc8a *${m.medicine_name}* (${m.dosage})\\n`;\n  alertMessage += `   \u2022 Schedule: ${m.frequency} (${m.timing})\\n`;\n});\n\nalertMessage += `\\n\ud83d\udc49 Log dosage adherence on your dashboard:\\nhttp://localhost:5173/medicines\\n\\n`;\nalertMessage += `\ud83d\udee1\ufe0f *Creative Tinkers Health Adherence Bot*`;\n\nreturn [{\n  json: {\n    total_due: dueMedicines.length,\n    medicines: dueMedicines,\n    notification_message: alertMessage,\n    timestamp: new Date().toISOString()\n  }\n}];"
       },
       "name": "Filter Due Dosages",
       "type": "n8n-nodes-base.code",
@@ -72,7 +73,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.NOTIFICATION_WEBHOOK_URL || 'http://localhost:8000/api/health' }}",
+        "url": "http://localhost:8000/api/health",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"type\": \"medication_reminder\",\n  \"message\": {{ JSON.stringify($json.notification_message) }},\n  \"total_medicines\": {{ $json.total_due }},\n  \"timestamp\": \"{{ $json.timestamp }}\"\n}",
@@ -137,6 +138,5 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "id": "fhrMedReminder01",
   "active": false
 }
