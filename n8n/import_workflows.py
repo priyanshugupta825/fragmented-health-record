@@ -2,7 +2,7 @@ import json
 import os
 import sqlite3
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 DB_PATH = os.path.expanduser(r"~\.n8n\database.sqlite")
 N8N_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -30,23 +30,26 @@ def main():
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
 
-    now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+
+    # Find personal project ID
+    project_row = cur.execute("SELECT id FROM project WHERE type='personal' LIMIT 1").fetchone()
+    if not project_row:
+        project_row = cur.execute("SELECT id FROM project LIMIT 1").fetchone()
+    project_id = project_row[0] if project_row else None
 
     for wf_meta in WORKFLOW_FILES:
         filepath = os.path.join(N8N_DIR, wf_meta["file"])
         with open(filepath, "r", encoding="utf-8") as f:
             data = json.load(f)
 
-        # Ensure ID and metadata are in the JSON file
         data["id"] = wf_meta["id"]
         data["name"] = wf_meta["name"]
         data["active"] = False
 
-        # Save back to file
         with open(filepath, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
 
-        # Upsert into workflow_entity
         nodes_json = json.dumps(data.get("nodes", []))
         conn_json = json.dumps(data.get("connections", {}))
         settings_json = json.dumps(data.get("settings", {"executionOrder": "v1"}))
@@ -85,11 +88,22 @@ def main():
                 1,
             ),
         )
-        print(f"[OK] Imported: {wf_meta['name']} (ID: {wf_meta['id']})")
+
+        if project_id:
+            cur.execute(
+                """
+                INSERT INTO shared_workflow (workflowId, projectId, role, createdAt, updatedAt)
+                VALUES (?, ?, 'workflow:owner', ?, ?)
+                ON CONFLICT(workflowId, projectId) DO NOTHING
+                """,
+                (wf_meta["id"], project_id, now, now)
+            )
+
+        print(f"[OK] Imported & Linked: {wf_meta['name']} ({wf_meta['id']})")
 
     conn.commit()
     conn.close()
-    print("\nAll 3 workflows successfully imported into your local n8n instance!")
+    print("\nAll workflows successfully imported and linked to your project!")
 
 if __name__ == "__main__":
     main()
