@@ -10,7 +10,10 @@
       "name": "Webhook - Ingest Document",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1.1,
-      "position": [240, 300],
+      "position": [
+        240,
+        300
+      ],
       "id": "node-webhook-ingest"
     },
     {
@@ -27,7 +30,10 @@
       "name": "Check Document URL",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [460, 300],
+      "position": [
+        460,
+        300
+      ],
       "id": "node-check-doc"
     },
     {
@@ -39,7 +45,10 @@
       "name": "Download Medical Document",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [680, 220],
+      "position": [
+        680,
+        220
+      ],
       "id": "node-download-file"
     },
     {
@@ -62,17 +71,23 @@
       "name": "FastAPI Gemini AI Extractor",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [900, 220],
+      "position": [
+        900,
+        220
+      ],
       "id": "node-fastapi-extract"
     },
     {
       "parameters": {
-        "jsCode": "// Format WhatsApp / Notification summary message\nconst data = $input.first().json;\nconst encounter = data.extraction?.encounter || {};\nconst medicines = data.extraction?.medicines || [];\nconst labResults = data.extraction?.lab_results || [];\n\nlet message = `🏥 *Medical Record Processed Successfully!*\\n\\n`;\nif (encounter.doctor_name) {\n  message += `👨‍⚕️ *Doctor:* ${encounter.doctor_name}\\n`;\n}\nif (encounter.facility_name) {\n  message += `🏢 *Facility:* ${encounter.facility_name}\\n`;\n}\nif (encounter.record_date) {\n  message += `📅 *Date:* ${encounter.record_date}\\n`;\n}\n\nif (medicines.length > 0) {\n  message += `\\n💊 *Prescribed Medications (${medicines.length}):*\\n`;\n  medicines.forEach(m => {\n    message += `• *${m.name}* (${m.dosage}) - ${m.frequency}\\n`;\n  });\n}\n\nif (labResults.length > 0) {\n  message += `\\n🧪 *Lab Biomarkers (${labResults.length}):*\\n`;\n  labResults.slice(0, 4).forEach(l => {\n    message += `• ${l.test_name}: *${l.value} ${l.unit}* (${l.flag})\\n`;\n  });\n}\n\nmessage += `\\n🛡️ *ABDM Health Vault:* Synced to your longitudinal timeline.`;\n\nreturn [{ json: { summary_message: message, raw_data: data } }];"
+        "jsCode": "// Format WhatsApp / Notification summary message\nconst data = $input.first().json;\nconst encounter = data.extraction?.encounter || {};\nconst medicines = data.extraction?.medicines || [];\nconst labResults = data.extraction?.lab_results || [];\n\nlet message = `\ud83c\udfe5 *Medical Record Processed Successfully!*\\n\\n`;\nif (encounter.doctor_name) {\n  message += `\ud83d\udc68\u200d\u2695\ufe0f *Doctor:* ${encounter.doctor_name}\\n`;\n}\nif (encounter.facility_name) {\n  message += `\ud83c\udfe2 *Facility:* ${encounter.facility_name}\\n`;\n}\nif (encounter.record_date) {\n  message += `\ud83d\udcc5 *Date:* ${encounter.record_date}\\n`;\n}\n\nif (medicines.length > 0) {\n  message += `\\n\ud83d\udc8a *Prescribed Medications (${medicines.length}):*\\n`;\n  medicines.forEach(m => {\n    message += `\u2022 *${m.name}* (${m.dosage}) - ${m.frequency}\\n`;\n  });\n}\n\nif (labResults.length > 0) {\n  message += `\\n\ud83e\uddea *Lab Biomarkers (${labResults.length}):*\\n`;\n  labResults.slice(0, 4).forEach(l => {\n    message += `\u2022 ${l.test_name}: *${l.value} ${l.unit}* (${l.flag})\\n`;\n  });\n}\n\nmessage += `\\n\ud83d\udee1\ufe0f *ABDM Health Vault:* Synced to your longitudinal timeline.`;\n\nreturn [{ json: { summary_message: message, raw_data: data } }];"
       },
       "name": "Format Summary Message",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1120, 220],
+      "position": [
+        1120,
+        220
+      ],
       "id": "node-format-message"
     },
     {
@@ -84,7 +99,10 @@
       "name": "Respond to Webhook",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [1340, 220],
+      "position": [
+        1340,
+        220
+      ],
       "id": "node-respond-webhook"
     }
   ],
@@ -147,5 +165,7 @@
   },
   "settings": {
     "executionOrder": "v1"
-  }
+  },
+  "id": "fhrDocIngest0001",
+  "active": false
 }
