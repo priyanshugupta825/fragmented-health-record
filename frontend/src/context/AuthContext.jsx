@@ -53,13 +53,13 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const instantDemoLogin = (email = 'ravi.kumar@abdm.gov.in', fullName = 'Ravi Kumar') => {
+  const instantDemoLogin = (email = 'ravi.kumar@abdm.gov.in', fullName = 'Ravi Kumar', abhaId = '91-4521-8890-4123') => {
     const demoUser = {
       id: 'demo-user-123',
       email,
       user_metadata: {
         full_name: fullName,
-        abha_id: '91-4521-8890-4123',
+        abha_id: abhaId,
         blood_group: 'O+',
         phone_number: '+91 98765 43210',
       },
@@ -82,7 +82,7 @@ export const AuthProvider = ({ children }) => {
           return res;
         }
       } catch (err) {
-        console.warn('Supabase auth error, falling back to seamless login:', err);
+        console.warn('Supabase auth error, using seamless login fallback:', err);
       }
     }
 
@@ -104,12 +104,16 @@ export const AuthProvider = ({ children }) => {
           setDemoMode(false);
           return res;
         }
+        if (res.error) {
+          console.warn('Supabase signup notice, activating fallback:', res.error);
+        }
       } catch (err) {
-        console.warn('Supabase signup error, using fallback:', err);
+        console.warn('Supabase signup error (rate limit/network), activating fallback:', err);
       }
     }
 
-    return instantDemoLogin(email, metadata.full_name || 'Patient User');
+    // Seamlessly log the user in with their chosen name and email!
+    return instantDemoLogin(email, metadata.full_name || 'Patient User', metadata.abha_id || '91-4521-8890-4123');
   };
 
   const signOut = async () => {

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { HeartPulse, ArrowRight, Lock, Mail, User, ShieldCheck, AlertCircle } from 'lucide-react';
+import { HeartPulse, ArrowRight, Lock, Mail, User, ShieldCheck, AlertCircle, Sparkles, Zap } from 'lucide-react';
 
 export const Signup = () => {
   const [fullName, setFullName] = useState('');
@@ -10,7 +10,7 @@ export const Signup = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signUp } = useAuth();
+  const { signUp, instantDemoLogin } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -20,17 +20,21 @@ export const Signup = () => {
 
     try {
       const metadata = {
-        full_name: fullName,
+        full_name: fullName || 'Patient User',
         abha_id: abhaId || '91-4521-8890-4123',
       };
-      const { error: signUpError } = await signUp(email, password, metadata);
-      if (signUpError) throw signUpError;
+      await signUp(email, password, metadata);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message || 'Failed to create profile. Please check your details.');
+      setError(err.message || 'Failed to create profile. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handle1ClickDemo = () => {
+    instantDemoLogin('ravi.kumar@abdm.gov.in', 'Ravi Kumar');
+    navigate('/dashboard');
   };
 
   return (
@@ -50,9 +54,26 @@ export const Signup = () => {
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow-xl shadow-brand-900/5 sm:rounded-3xl sm:px-10 border border-brand-100">
+        <div className="bg-white py-8 px-4 shadow-xl shadow-brand-900/5 sm:rounded-3xl sm:px-10 border border-brand-100 space-y-5">
+          
+          {/* Quick Demo Access */}
+          <div className="p-3.5 bg-gradient-to-r from-brand-100/90 via-brand-100 to-sand-100/80 border border-brand-200 rounded-2xl shadow-2xs space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-xs uppercase tracking-wider text-brand-900 flex items-center gap-1.5">
+                <Zap className="w-3.5 h-3.5 text-brand-600 fill-brand-600" /> Instant Access
+              </span>
+              <button
+                type="button"
+                onClick={handle1ClickDemo}
+                className="px-3 py-1 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-bold transition shadow-2xs"
+              >
+                1-Click Demo Login →
+              </button>
+            </div>
+          </div>
+
           {error && (
-            <div className="mb-6 p-3.5 bg-red-50 border border-red-200 rounded-2xl flex items-center gap-2 text-xs text-red-700">
+            <div className="p-3.5 bg-red-50 border border-red-200 rounded-2xl flex items-center gap-2 text-xs text-red-700">
               <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
               <span>{error}</span>
             </div>
@@ -144,7 +165,7 @@ export const Signup = () => {
             </button>
           </form>
 
-          <div className="mt-6 text-center text-xs text-slate-500">
+          <div className="pt-2 text-center text-xs text-slate-500">
             Already registered?{' '}
             <Link to="/login" className="font-bold text-brand-700 hover:text-brand-800 underline">
               Sign in to vault
