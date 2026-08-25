@@ -17,6 +17,7 @@ import {
   Sparkles,
   AlertCircle,
   Eye,
+  User,
 } from 'lucide-react';
 import apiClient from '../api/client';
 import { useAuth } from '../context/AuthContext';
@@ -33,24 +34,18 @@ export const EmergencyCard = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [message, setMessage] = useState('');
 
-  // Editable Profile State
+  // Editable Profile State (Clean defaults)
   const [bloodGroup, setBloodGroup] = useState('O+');
-  const [allergies, setAllergies] = useState([
-    'Penicillin (Severe Anaphylaxis Risk)',
-    'NSAIDs / Aspirin (Gastric)',
-  ]);
+  const [allergies, setAllergies] = useState([]);
   const [newAllergy, setNewAllergy] = useState('');
-  const [chronicConditions, setChronicConditions] = useState([
-    'Essential Hypertension (Controlled)',
-    'Pre-diabetes (Borderline)',
-  ]);
+  const [chronicConditions, setChronicConditions] = useState([]);
   const [newCondition, setNewCondition] = useState('');
-  const [contacts, setContacts] = useState([
-    { name: 'Sunita Kumar', relation: 'Spouse', phone: '+91 98765 43210' },
-    { name: 'Dr. Arun Sharma', relation: 'Cardiologist', phone: '+91 98111 22334' },
-  ]);
-  const [organDonor, setOrganDonor] = useState(true);
-  const [criticalNotes, setCriticalNotes] = useState('Pacemaker: None. Bleeding risk on high doses.');
+  const [contacts, setContacts] = useState([]);
+  const [newContactName, setNewContactName] = useState('');
+  const [newContactRel, setNewContactRel] = useState('');
+  const [newContactPhone, setNewContactPhone] = useState('');
+  const [organDonor, setOrganDonor] = useState(false);
+  const [criticalNotes, setCriticalNotes] = useState('');
 
   const fetchProfileAndToken = async () => {
     setLoading(true);
@@ -62,7 +57,7 @@ export const EmergencyCard = () => {
         setAllergies(info.allergies || []);
         setChronicConditions(info.chronic_conditions || []);
         setContacts(info.emergency_contacts || []);
-        setOrganDonor(info.organ_donor ?? true);
+        setOrganDonor(info.organ_donor ?? false);
         setCriticalNotes(info.critical_notes || '');
         setAccessCount(res.data.access_count || 0);
 
@@ -74,7 +69,7 @@ export const EmergencyCard = () => {
         }
       }
     } catch (err) {
-      console.warn('Profile fetch error, using default data:', err);
+      console.warn('Profile fetch note:', err);
     } finally {
       setLoading(false);
     }
@@ -155,6 +150,26 @@ export const EmergencyCard = () => {
 
   const removeCondition = (idx) => {
     setChronicConditions(chronicConditions.filter((_, i) => i !== idx));
+  };
+
+  const addContact = () => {
+    if (newContactName.trim() && newContactPhone.trim()) {
+      setContacts([
+        ...contacts,
+        {
+          name: newContactName.trim(),
+          relation: newContactRel.trim() || 'Relative',
+          phone: newContactPhone.trim(),
+        },
+      ]);
+      setNewContactName('');
+      setNewContactRel('');
+      setNewContactPhone('');
+    }
+  };
+
+  const removeContact = (idx) => {
+    setContacts(contacts.filter((_, i) => i !== idx));
   };
 
   return (
@@ -313,16 +328,20 @@ export const EmergencyCard = () => {
                     Add
                   </button>
                 </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {allergies.map((a, i) => (
-                    <span key={i} className="inline-flex items-center gap-1 bg-red-50 text-red-700 border border-red-200 px-2 py-1 rounded-lg text-[11px]">
-                      {a}
-                      <button type="button" onClick={() => removeAllergy(i)}>
-                        <Trash2 className="w-3 h-3 text-red-500" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
+                {allergies.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {allergies.map((a, i) => (
+                      <span key={i} className="inline-flex items-center gap-1 bg-red-50 text-red-700 border border-red-200 px-2 py-1 rounded-lg text-[11px]">
+                        {a}
+                        <button type="button" onClick={() => removeAllergy(i)}>
+                          <Trash2 className="w-3 h-3 text-red-500" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-slate-400 italic">No allergies added yet.</p>
+                )}
               </div>
 
               {/* Conditions editor */}
@@ -331,7 +350,7 @@ export const EmergencyCard = () => {
                 <div className="flex gap-2 mb-2">
                   <input
                     type="text"
-                    placeholder="e.g. Hypertension, Asthma"
+                    placeholder="e.g. Hypertension, Diabetes, Asthma"
                     value={newCondition}
                     onChange={(e) => setNewCondition(e.target.value)}
                     className="flex-1 p-2 rounded-xl border border-brand-200 outline-none"
@@ -344,26 +363,81 @@ export const EmergencyCard = () => {
                     Add
                   </button>
                 </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {chronicConditions.map((c, i) => (
-                    <span key={i} className="inline-flex items-center gap-1 bg-sand-100 text-sand-800 border border-sand-300 px-2 py-1 rounded-lg text-[11px]">
-                      {c}
-                      <button type="button" onClick={() => removeCondition(i)}>
-                        <Trash2 className="w-3 h-3 text-sand-600" />
-                      </button>
-                    </span>
-                  ))}
+                {chronicConditions.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {chronicConditions.map((c, i) => (
+                      <span key={i} className="inline-flex items-center gap-1 bg-sand-100 text-sand-800 border border-sand-300 px-2 py-1 rounded-lg text-[11px]">
+                        {c}
+                        <button type="button" onClick={() => removeCondition(i)}>
+                          <Trash2 className="w-3 h-3 text-sand-600" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-slate-400 italic">No chronic conditions added.</p>
+                )}
+              </div>
+
+              {/* Emergency Contacts editor */}
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">Emergency Contacts</label>
+                <div className="grid grid-cols-3 gap-2 mb-2">
+                  <input
+                    type="text"
+                    placeholder="Name"
+                    value={newContactName}
+                    onChange={(e) => setNewContactName(e.target.value)}
+                    className="p-2 rounded-xl border border-brand-200 outline-none"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Relation (e.g. Spouse)"
+                    value={newContactRel}
+                    onChange={(e) => setNewContactRel(e.target.value)}
+                    className="p-2 rounded-xl border border-brand-200 outline-none"
+                  />
+                  <div className="flex gap-1.5">
+                    <input
+                      type="text"
+                      placeholder="Phone"
+                      value={newContactPhone}
+                      onChange={(e) => setNewContactPhone(e.target.value)}
+                      className="flex-1 p-2 rounded-xl border border-brand-200 outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={addContact}
+                      className="px-3 py-2 rounded-xl bg-brand-700 text-white font-bold"
+                    >
+                      Add
+                    </button>
+                  </div>
                 </div>
+                {contacts.length > 0 ? (
+                  <div className="space-y-1.5">
+                    {contacts.map((c, i) => (
+                      <div key={i} className="flex items-center justify-between p-2 rounded-xl bg-brand-50/70 border border-brand-200">
+                        <span><strong>{c.name}</strong> ({c.relation}) — {c.phone}</span>
+                        <button type="button" onClick={() => removeContact(i)}>
+                          <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-slate-400 italic">No emergency contacts added yet.</p>
+                )}
               </div>
 
               {/* Critical Notes */}
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">Critical Notes / Devices</label>
+                <label className="font-semibold text-slate-700 block mb-1">Critical Notes / Implants</label>
                 <input
                   type="text"
                   value={criticalNotes}
                   onChange={(e) => setCriticalNotes(e.target.value)}
-                  placeholder="e.g. Pacemaker implanted 2023"
+                  placeholder="e.g. Pacemaker implanted, severe latex allergy"
                   className="w-full p-2.5 rounded-xl border border-brand-200 outline-none"
                 />
               </div>
@@ -396,10 +470,10 @@ export const EmergencyCard = () => {
                       EMERGENCY CARD PREVIEW
                     </span>
                     <h2 className="text-xl font-bold mt-0.5">
-                      {user?.user_metadata?.full_name || 'Ravi Kumar'}
+                      {user?.user_metadata?.full_name || 'Patient'}
                     </h2>
                     <p className="text-xs text-brand-200 font-mono mt-0.5">
-                      ABHA: {user?.user_metadata?.abha_id || '91-4521-8890-4123'}
+                      ABHA: {user?.user_metadata?.abha_id || 'Not Assigned'}
                     </p>
                   </div>
 
@@ -416,22 +490,30 @@ export const EmergencyCard = () => {
                     <span className="text-red-300 font-bold block flex items-center gap-1.5">
                       <AlertOctagon className="w-3.5 h-3.5" /> Critical Allergies
                     </span>
-                    <ul className="list-disc list-inside text-slate-300 space-y-0.5">
-                      {allergies.map((a, i) => (
-                        <li key={i}>{a}</li>
-                      ))}
-                    </ul>
+                    {allergies.length > 0 ? (
+                      <ul className="list-disc list-inside text-slate-300 space-y-0.5">
+                        {allergies.map((a, i) => (
+                          <li key={i}>{a}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-slate-400 italic">No allergies recorded.</p>
+                    )}
                   </div>
 
                   <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-1">
                     <span className="text-brand-300 font-bold block flex items-center gap-1.5">
                       <Heart className="w-3.5 h-3.5" /> Chronic Conditions
                     </span>
-                    <ul className="list-disc list-inside text-slate-300 space-y-0.5">
-                      {chronicConditions.map((c, i) => (
-                        <li key={i}>{c}</li>
-                      ))}
-                    </ul>
+                    {chronicConditions.length > 0 ? (
+                      <ul className="list-disc list-inside text-slate-300 space-y-0.5">
+                        {chronicConditions.map((c, i) => (
+                          <li key={i}>{c}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-slate-400 italic">No conditions recorded.</p>
+                    )}
                   </div>
                 </div>
 
@@ -439,14 +521,18 @@ export const EmergencyCard = () => {
                   <span className="text-slate-300 font-bold block mb-1.5 flex items-center gap-1.5 text-xs">
                     <Phone className="w-3.5 h-3.5 text-brand-400" /> Primary Emergency Contacts
                   </span>
-                  <div className="flex flex-col sm:flex-row gap-3 text-xs">
-                    {contacts.map((contact, idx) => (
-                      <div key={idx} className="flex-1">
-                        <p className="font-semibold text-white">{contact.name} ({contact.relation})</p>
-                        <p className="text-brand-200 font-mono">{contact.phone}</p>
-                      </div>
-                    ))}
-                  </div>
+                  {contacts.length > 0 ? (
+                    <div className="flex flex-col sm:flex-row gap-3 text-xs">
+                      {contacts.map((contact, idx) => (
+                        <div key={idx} className="flex-1">
+                          <p className="font-semibold text-white">{contact.name} ({contact.relation})</p>
+                          <p className="text-brand-200 font-mono">{contact.phone}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-slate-400 italic text-xs">No emergency contacts saved yet. Click 'Edit Emergency Info' to add.</p>
+                  )}
                 </div>
               </div>
 
