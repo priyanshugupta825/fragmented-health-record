@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import apiClient from '../api/client';
 import {
   UploadCloud,
   Activity,
@@ -13,18 +14,65 @@ import {
   ChevronRight,
   AlertCircle,
   Plus,
+  Hospital,
+  FolderOpen,
 } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
 
 export const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  const [records, setRecords] = useState([]);
+  const [medicines, setMedicines] = useState([]);
+  const [docCount, setDocCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
   const displayName = user?.user_metadata?.full_name || 'Patient';
   const abhaId = user?.user_metadata?.abha_id || '91-4521-8890-4123';
 
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      setLoading(true);
+      try {
+        // Fetch timeline records
+        const timelineRes = await apiClient.get('/timeline');
+        if (timelineRes.data?.records) {
+          const recs = timelineRes.data.records;
+          setRecords(recs);
+          
+          // Extract active medicines
+          const allMeds = [];
+          recs.forEach((r) => {
+            if (r.medicines && Array.isArray(r.medicines)) {
+              r.medicines.forEach((m) => {
+                if (!allMeds.some((existing) => existing.name === m.name)) {
+                  allMeds.push(m);
+                }
+              });
+            }
+          });
+          setMedicines(allMeds);
+        }
+
+        // Fetch document count
+        const docsRes = await apiClient.get('/documents/');
+        if (docsRes.data?.documents) {
+          setDocCount(docsRes.data.documents.length);
+        }
+      } catch (err) {
+        console.warn('Dashboard data fetch note:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
   return (
     <div className="space-y-6">
-      {/* Header Banner - Mint & Sage Theme */}
+      {/* Header Banner - Ocean Breathe Theme */}
       <div className="bg-gradient-to-r from-brand-700 via-brand-600 to-brand-500 rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-brand-900/10 flex flex-col md:flex-row md:items-center justify-between gap-6 border border-brand-500/30">
         <div>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-semibold backdrop-blur-xs mb-3 border border-white/20">
@@ -34,7 +82,7 @@ export const Dashboard = () => {
             Namaste, {displayName}
           </h1>
           <p className="text-brand-100 text-sm mt-1.5 max-w-xl leading-relaxed">
-            Your unified health records are consolidated across hospitals, clinics, and labs with Gemini AI document intelligence.
+            Your unified health records across hospitals, clinics, and labs powered by Gemini AI.
           </p>
           <div className="mt-4 flex items-center gap-3 text-xs text-brand-100 font-mono bg-black/20 px-3 py-1.5 rounded-xl w-fit border border-white/10">
             <span>ABHA:</span>
@@ -70,9 +118,9 @@ export const Dashboard = () => {
               <FileText className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl font-extrabold text-slate-900 mt-2">12</p>
+          <p className="text-2xl font-extrabold text-slate-900 mt-2">{docCount}</p>
           <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
-            <span className="text-brand-700 font-bold">100%</span> AI Extracted
+            <span className="text-brand-700 font-bold">{docCount > 0 ? '100%' : '0'}</span> AI Extracted
           </p>
         </div>
 
@@ -83,8 +131,10 @@ export const Dashboard = () => {
               <Pill className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl font-extrabold text-slate-900 mt-2">3</p>
-          <p className="text-xs text-slate-500 mt-1">Dosage on track today</p>
+          <p className="text-2xl font-extrabold text-slate-900 mt-2">{medicines.length}</p>
+          <p className="text-xs text-slate-500 mt-1">
+            {medicines.length > 0 ? 'Dosages active' : 'No active prescriptions'}
+          </p>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-brand-100 shadow-2xs">
@@ -94,8 +144,10 @@ export const Dashboard = () => {
               <Activity className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl font-extrabold text-slate-900 mt-2">8</p>
-          <p className="text-xs text-slate-500 mt-1">Across 3 hospital networks</p>
+          <p className="text-2xl font-extrabold text-slate-900 mt-2">{records.length}</p>
+          <p className="text-xs text-slate-500 mt-1">
+            {records.length > 0 ? 'Extracted records' : 'No records yet'}
+          </p>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-brand-100 shadow-2xs">
@@ -105,82 +157,102 @@ export const Dashboard = () => {
               <UserCheck className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl font-extrabold text-slate-900 mt-2">1 Active</p>
-          <p className="text-xs text-brand-700 font-medium mt-1">Expires in 18 hrs</p>
+          <p className="text-2xl font-extrabold text-slate-900 mt-2">Ready</p>
+          <p className="text-xs text-brand-700 font-medium mt-1">Consent-based sharing</p>
         </div>
       </div>
 
       {/* Main Grid: Recent Timeline & Active Medications */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Health Journey (2 Columns on large screens) */}
+        {/* Recent Health Journey (2 Columns) */}
         <div className="lg:col-span-2 bg-white rounded-3xl border border-brand-100 p-6 shadow-2xs">
           <div className="flex items-center justify-between mb-5">
             <div>
               <h2 className="text-lg font-bold text-brand-950">Recent Health Journey</h2>
               <p className="text-xs text-slate-500">Auto-extracted from your prescriptions & lab reports</p>
             </div>
-            <button
-              onClick={() => navigate('/timeline')}
-              className="text-xs font-bold text-brand-700 hover:text-brand-800 flex items-center gap-1 bg-brand-50 px-2.5 py-1 rounded-lg border border-brand-100"
-            >
-              Full Timeline <ChevronRight className="w-3.5 h-3.5" />
-            </button>
+            {records.length > 0 && (
+              <button
+                onClick={() => navigate('/timeline')}
+                className="text-xs font-bold text-brand-700 hover:text-brand-800 flex items-center gap-1 bg-brand-50 px-2.5 py-1 rounded-lg border border-brand-100"
+              >
+                Full Timeline <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
-          <div className="space-y-4">
-            <div className="p-4 rounded-2xl bg-brand-50/60 border border-brand-200/60 hover:border-brand-300 transition">
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-xl bg-white border border-brand-200 text-brand-700 font-bold text-xs mt-0.5 shadow-2xs">
-                    12 Aug
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-sm text-slate-900">Cardiology Consultation & Lipid Panel</h3>
-                    <p className="text-xs text-slate-600">Dr. A. Sharma • Max Super Speciality Hospital</p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="text-[11px] px-2.5 py-0.5 rounded-lg bg-brand-100 text-brand-800 font-semibold border border-brand-200/80">
-                        Prescription Updated
-                      </span>
-                      <span className="text-[11px] px-2.5 py-0.5 rounded-lg bg-sand-200/80 text-sand-800 font-semibold border border-sand-300">
-                        LDL: 142 mg/dL (Elevated)
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <button
-                  onClick={() => navigate('/timeline')}
-                  className="text-slate-400 hover:text-slate-600"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
+          {records.length === 0 ? (
+            <div className="text-center py-10 px-4 bg-brand-50/40 rounded-2xl border border-brand-100 space-y-3">
+              <div className="w-12 h-12 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center mx-auto">
+                <FolderOpen className="w-6 h-6" />
               </div>
+              <h3 className="font-bold text-slate-900 text-sm">No Medical Records Yet</h3>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                Upload your first prescription, lab report, or discharge summary to see your AI-extracted timeline here.
+              </p>
+              <button
+                onClick={() => navigate('/upload')}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs shadow-2xs transition"
+              >
+                <UploadCloud className="w-3.5 h-3.5" />
+                <span>Upload Medical Record</span>
+              </button>
             </div>
+          ) : (
+            <div className="space-y-3">
+              {records.slice(0, 3).map((record) => {
+                const formattedDate = record.record_date
+                  ? format(parseISO(record.record_date), 'dd MMM')
+                  : 'Recent';
 
-            <div className="p-4 rounded-2xl bg-brand-50/60 border border-brand-200/60 hover:border-brand-300 transition">
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-xl bg-white border border-brand-200 text-brand-700 font-bold text-xs mt-0.5 shadow-2xs">
-                    28 Jul
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-sm text-slate-900">Routine Health Checkup & HbA1c</h3>
-                    <p className="text-xs text-slate-600">Dr Lal PathLabs • Diagnostic Report</p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="text-[11px] px-2.5 py-0.5 rounded-lg bg-brand-100 text-brand-800 font-semibold border border-brand-200/80">
-                        HbA1c: 5.9% (Pre-diabetic flag)
-                      </span>
+                return (
+                  <div
+                    key={record.id}
+                    className="p-4 rounded-2xl bg-brand-50/60 border border-brand-200/60 hover:border-brand-300 transition"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 rounded-xl bg-white border border-brand-200 text-brand-700 font-bold text-xs mt-0.5 shadow-2xs">
+                          {formattedDate}
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-sm text-slate-900">
+                            {record.doctor_name || record.record_type || 'Medical Record'}
+                          </h3>
+                          <p className="text-xs text-slate-600 flex items-center gap-1 mt-0.5">
+                            <Hospital className="w-3 h-3 text-brand-500" />
+                            <span>{record.facility_name || 'Healthcare Facility'}</span>
+                            {record.doctor_specialty && <span>• {record.doctor_specialty}</span>}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                            {record.diagnoses?.map((d, i) => (
+                              <span
+                                key={i}
+                                className="text-[11px] px-2 py-0.5 rounded-lg bg-sand-200/80 text-sand-800 font-semibold border border-sand-300"
+                              >
+                                {d}
+                              </span>
+                            ))}
+                            {record.medicines?.length > 0 && (
+                              <span className="text-[11px] px-2 py-0.5 rounded-lg bg-brand-100 text-brand-800 font-semibold border border-brand-200/80">
+                                {record.medicines.length} Prescriptions
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => navigate('/timeline')}
+                        className="text-slate-400 hover:text-slate-600"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
-                </div>
-                <button
-                  onClick={() => navigate('/timeline')}
-                  className="text-slate-400 hover:text-slate-600"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
+                );
+              })}
             </div>
-          </div>
+          )}
         </div>
 
         {/* Active Medications Quick Manager */}
@@ -199,37 +271,34 @@ export const Dashboard = () => {
               </button>
             </div>
 
-            <div className="space-y-3">
-              <div className="p-3.5 rounded-2xl bg-brand-50/70 border border-brand-200/60 flex items-center justify-between">
-                <div>
-                  <h4 className="font-bold text-sm text-slate-900">Telmisartan 40mg</h4>
-                  <p className="text-xs text-slate-500">1 tablet • Morning after breakfast</p>
-                </div>
-                <span className="text-[11px] font-bold text-brand-800 bg-brand-100 px-2.5 py-1 rounded-xl border border-brand-200">
-                  Taken 8:30 AM
-                </span>
+            {medicines.length === 0 ? (
+              <div className="text-center py-8 px-3 bg-brand-50/30 rounded-2xl border border-brand-100 space-y-2">
+                <Pill className="w-8 h-8 text-brand-400 mx-auto" />
+                <p className="text-xs font-semibold text-slate-700">No active medications</p>
+                <p className="text-[11px] text-slate-400">
+                  Uploaded prescriptions will auto-populate active medications here.
+                </p>
               </div>
-
-              <div className="p-3.5 rounded-2xl bg-brand-50/70 border border-brand-200/60 flex items-center justify-between">
-                <div>
-                  <h4 className="font-bold text-sm text-slate-900">Atorvastatin 10mg</h4>
-                  <p className="text-xs text-slate-500">1 tablet • Night before sleep</p>
-                </div>
-                <span className="text-[11px] font-semibold text-slate-600 bg-slate-200/70 px-2.5 py-1 rounded-xl">
-                  Due 9:30 PM
-                </span>
+            ) : (
+              <div className="space-y-3">
+                {medicines.slice(0, 3).map((med, idx) => (
+                  <div
+                    key={idx}
+                    className="p-3.5 rounded-2xl bg-brand-50/70 border border-brand-200/60 flex items-center justify-between"
+                  >
+                    <div>
+                      <h4 className="font-bold text-sm text-slate-900">{med.name}</h4>
+                      <p className="text-xs text-slate-500">
+                        {med.dosage} • {med.frequency}
+                      </p>
+                    </div>
+                    <span className="text-[11px] font-bold text-brand-800 bg-brand-100 px-2.5 py-1 rounded-xl border border-brand-200">
+                      Active
+                    </span>
+                  </div>
+                ))}
               </div>
-
-              <div className="p-3.5 rounded-2xl bg-brand-50/70 border border-brand-200/60 flex items-center justify-between">
-                <div>
-                  <h4 className="font-bold text-sm text-slate-900">Vitamin D3 60k</h4>
-                  <p className="text-xs text-slate-500">1 cap • Weekly Sunday</p>
-                </div>
-                <span className="text-[11px] font-semibold text-slate-600 bg-slate-200/70 px-2.5 py-1 rounded-xl">
-                  Next Sun
-                </span>
-              </div>
-            </div>
+            )}
           </div>
 
           <button
