@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { HeartPulse, ArrowRight, Lock, Mail, AlertCircle, Sparkles } from 'lucide-react';
+import { HeartPulse, ArrowRight, Lock, Mail, AlertCircle, Sparkles, Zap, ShieldCheck } from 'lucide-react';
 
 export const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn, demoMode } = useAuth();
+  const { signIn, instantDemoLogin } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -17,19 +17,18 @@ export const Login = () => {
     setLoading(true);
 
     try {
-      const { error: signInError } = await signIn(email, password);
-      if (signInError) throw signInError;
+      await signIn(email, password);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message || 'Failed to sign in. Please verify your credentials.');
+      setError(err.message || 'Failed to sign in. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleQuickDemo = () => {
-    setEmail('patient.demo@abdm.gov.in');
-    setPassword('demo123456');
+  const handle1ClickDemo = () => {
+    instantDemoLogin('ravi.kumar@abdm.gov.in', 'Ravi Kumar');
+    navigate('/dashboard');
   };
 
   return (
@@ -44,37 +43,47 @@ export const Login = () => {
           Fragmented Health Record
         </h2>
         <p className="mt-2 text-center text-sm text-slate-500 font-medium">
-          Unifying India's healthcare journey across hospitals, labs & clinics
+          Unified Health Vault & AI Timeline for India's ABDM Ecosystem
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow-xl shadow-brand-900/5 sm:rounded-3xl sm:px-10 border border-brand-100">
-          {demoMode && (
-            <div className="mb-6 p-3.5 bg-brand-100/70 border border-brand-200 rounded-2xl flex items-start gap-2.5">
-              <Sparkles className="w-4 h-4 text-brand-600 mt-0.5 shrink-0" />
-              <div className="text-xs text-brand-900">
-                <span className="font-bold block">Demo Environment Active</span>
-                Enter any email or click below to auto-fill demo patient credentials.
-                <button
-                  type="button"
-                  onClick={handleQuickDemo}
-                  className="mt-1 text-brand-700 underline font-bold hover:text-brand-900 block"
-                >
-                  Fill Demo Credentials
-                </button>
-              </div>
+        <div className="bg-white py-8 px-4 shadow-xl shadow-brand-900/5 sm:rounded-3xl sm:px-10 border border-brand-100 space-y-6">
+          
+          {/* 1-Click Instant Demo Login Banner (Prominent for Judges) */}
+          <div className="p-4 bg-gradient-to-r from-brand-100/90 via-brand-100 to-sand-100/80 border border-brand-200 rounded-2xl shadow-2xs space-y-2">
+            <div className="flex items-center gap-2 text-brand-900">
+              <Zap className="w-4 h-4 text-brand-600 fill-brand-600" />
+              <span className="font-bold text-xs uppercase tracking-wider">Quick Hackathon Demo</span>
             </div>
-          )}
+            <p className="text-xs text-brand-950 leading-relaxed">
+              Explore all features with pre-populated medical records, prescriptions, and lab history in 1 click.
+            </p>
+            <button
+              type="button"
+              onClick={handle1ClickDemo}
+              className="w-full mt-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs shadow-2xs transition"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-brand-200" />
+              <span>Instant 1-Click Demo Login</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="relative flex py-1 items-center">
+            <div className="flex-grow border-t border-brand-100"></div>
+            <span className="flex-shrink mx-3 text-slate-400 text-xs font-semibold uppercase tracking-wider">Or Sign in with credentials</span>
+            <div className="flex-grow border-t border-brand-100"></div>
+          </div>
 
           {error && (
-            <div className="mb-6 p-3.5 bg-red-50 border border-red-200 rounded-2xl flex items-center gap-2 text-xs text-red-700">
+            <div className="p-3.5 bg-red-50 border border-red-200 rounded-2xl flex items-center gap-2 text-xs text-red-700">
               <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
               <span>{error}</span>
             </div>
           )}
 
-          <form className="space-y-5" onSubmit={handleSubmit}>
+          <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
               <label className="block text-xs font-bold text-brand-900 uppercase tracking-wider mb-1">
                 Email / ABHA ID
@@ -123,7 +132,7 @@ export const Login = () => {
             </button>
           </form>
 
-          <div className="mt-6 text-center text-xs text-slate-500">
+          <div className="pt-2 text-center text-xs text-slate-500">
             Don't have an account?{' '}
             <Link to="/signup" className="font-bold text-brand-700 hover:text-brand-800 underline">
               Create ABHA profile
